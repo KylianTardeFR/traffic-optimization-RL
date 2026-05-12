@@ -22,7 +22,6 @@ def main():
     checkpoint_dir = Path("checkpoints") / scenario / model_name
 
     sumo_path = Path(sumo_rl.__file__).parent
-    print(sumo_path)
     scenario_path = sumo_path / "nets" / "RESCO" / scenario
     net_file = scenario_path / f"{scenario}.net.xml"
     route_file= scenario_path / f"{scenario}.rou.xml"
