@@ -31,7 +31,7 @@ def max_pressure_action(ts: sumo_rl.TrafficSignal) -> int:
     return best_phase
 
 
-def main():
+def max_pressure():
     scenario = "cologne1"
     model_name = "max_pressure"
     seed = 42
@@ -91,4 +91,4 @@ def main():
 
 
 if __name__ == "__main__":
-    print(main())
+    print(max_pressure())

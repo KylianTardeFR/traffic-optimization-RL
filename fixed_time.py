@@ -4,7 +4,7 @@ import sumo_rl
 import numpy as np
 
 
-def main():
+def fixed_time():
     scenario = "cologne1"
     model_name = "fixed_time"
     seed = 42
@@ -55,4 +55,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    print(fixed_time())
