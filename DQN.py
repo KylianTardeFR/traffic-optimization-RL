@@ -1,69 +1,65 @@
-from stable_baselines3 import DQN
-from stable_baselines3.common.callbacks import (
-    CheckpointCallback,
-    EvalCallback,
-)
-import gymnasium as gym
+"""DQN training for cologne1.
+
+Import `train` from a notebook:
+    from dqn import train
+    model_path = train(seed=42)
+    model_path = train(seed=42, reward_fn="pressure")
+"""
 from pathlib import Path
+
+import gymnasium as gym
 import sumo_rl
+from stable_baselines3 import DQN
+from stable_baselines3.common.callbacks import CheckpointCallback
+
 from Utils.callbacks import TSCMetricsCallback
 
 
-def main():
-    scenario = "cologne1"
-    model_name = "dqn"
-    timesteps = 200_000
-    seed = 42
-    eval_seed = 43
-    reward_fn = "diff-waiting-time"
+def train(seed=42, reward_fn="diff-waiting-time", timesteps=200_000, scenario="cologne1"):
+    """Train DQN with the given seed and reward function.
 
-    tb_dir = Path("tb") / scenario / model_name
-    output_dir = Path("outputs") / scenario / model_name
-    checkpoint_dir = Path("checkpoints") / scenario / model_name
+    Each (seed, reward) combo gets its own folder under checkpoints/, tb/, outputs/
+    so runs don't overwrite each other.
+
+    Returns the path to the saved final model.
+    """
+    tag = f"seed{seed}"
+    if reward_fn != "diff-waiting-time":
+        tag += f"_{reward_fn}"
+
+    tb_dir = Path("tb") / scenario / "dqn" / tag
+    output_dir = Path("outputs") / scenario / "dqn" / tag
+    checkpoint_dir = Path("checkpoints") / scenario / "dqn" / tag
+    final_path = checkpoint_dir / "final.zip"
+
+    if final_path.exists():
+        print(f"[dqn] {tag}: already trained, skipping")
+        return final_path
 
     sumo_path = Path(sumo_rl.__file__).parent
     scenario_path = sumo_path / "nets" / "RESCO" / scenario
     net_file = scenario_path / f"{scenario}.net.xml"
-    route_file= scenario_path / f"{scenario}.rou.xml"
+    route_file = scenario_path / f"{scenario}.rou.xml"
 
     env = gym.make(
-            "sumo-rl-v0",
-            net_file=net_file,
-            route_file=route_file,
-            out_csv_name=str(output_dir / "train"),
-            single_agent=True,
-            use_gui=False,
-            num_seconds=5400,
-            begin_time=25200,
-            delta_time=5,
-            yellow_time=2,
-            min_green=5,
-            max_green=60,
-            sumo_seed=seed,
-            reward_fn=reward_fn,
-            add_system_info=True,
-            sumo_warnings=False,
-        )
+        "sumo-rl-v0",
+        net_file=net_file,
+        route_file=route_file,
+        out_csv_name=str(output_dir / "train"),
+        single_agent=True,
+        use_gui=False,
+        num_seconds=5400,
+        begin_time=25200,
+        delta_time=5,
+        yellow_time=2,
+        min_green=5,
+        max_green=60,
+        sumo_seed=seed,
+        reward_fn=reward_fn,
+        add_system_info=True,
+        sumo_warnings=False,
+    )
 
-    eval_env = gym.make(
-            "sumo-rl-v0",
-            net_file=net_file,
-            route_file=route_file,
-            out_csv_name=str(output_dir / "eval"),
-            single_agent=True,
-            use_gui=False,
-            num_seconds=5400,
-            begin_time=25200,
-            delta_time=5,
-            yellow_time=2,
-            min_green=5,
-            max_green=60,
-            sumo_seed=eval_seed,
-            reward_fn=reward_fn,
-            add_system_info=True,
-            sumo_warnings=False,
-        )
-    
     model = DQN(
         policy="MlpPolicy",
         env=env,
@@ -80,39 +76,29 @@ def main():
         gradient_steps=1,
         exploration_fraction=0.2,
         exploration_final_eps=0.05,
-        target_update_interval=500
+        target_update_interval=500,
     )
 
-    callbacks=[
+    callbacks = [
         TSCMetricsCallback(),
         CheckpointCallback(
             save_freq=50000,
-            save_path=checkpoint_dir,
+            save_path=str(checkpoint_dir),
             name_prefix="dqn",
-        ),
-        EvalCallback(
-            eval_env,
-            best_model_save_path=str(checkpoint_dir / "best"),
-            log_path=str(checkpoint_dir / "eval_logs"),
-            eval_freq=20000,
-            n_eval_episodes=3,
-            deterministic=True,
         ),
     ]
 
+    print(f"[dqn] training {tag} for {timesteps:,} steps")
     try:
         model.learn(
             total_timesteps=timesteps,
             callback=callbacks,
             tb_log_name=scenario,
-            progress_bar=True
+            progress_bar=True,
         )
     finally:
-        model.save(str(checkpoint_dir / "final"))
+        model.save(str(final_path))
         env.close()
-        eval_env.close()
-        print(f"[train] saved final model to {checkpoint_dir / 'final'}")
+        print(f"[dqn] saved -> {final_path}")
 
-
-if __name__ == "__main__":
-    main()
+    return final_path
