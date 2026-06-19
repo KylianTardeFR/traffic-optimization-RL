@@ -1,0 +1,6 @@
+algo,reward_fn,n_seeds,wait_mean,wait_std,speed_mean,speed_std,stopped_mean,stopped_std,p95_mean,p95_std
+dqn,diff-waiting-time,5,134.44,463.878,5.253,1.198,16.674,49.277,318.664,1096.756
+ppo,average-speed,3,181.175,152.669,5.667,0.056,2.799,0.32,919.724,774.905
+ppo,diff-waiting-time,5,68.481,137.497,5.503,0.521,5.081,8.616,335.011,657.173
+ppo,pressure,3,100.9,147.059,5.55,0.132,2.714,0.3,511.555,746.196
+ppo,queue,3,0.441,0.066,5.522,0.136,2.583,0.206,1.986,0.494
